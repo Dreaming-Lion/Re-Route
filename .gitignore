@@ -1,0 +1,7 @@
+.env
+node_modules/
+.expo/
+.parcel-cache/
+node_modules/
+.env
+.expo/
