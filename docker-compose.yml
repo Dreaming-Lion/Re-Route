@@ -45,12 +45,12 @@ services:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
       REACT_NATIVE_PACKAGER_HOSTNAME: 0.0.0.0
       WATCHMAN_DISABLE: "true"
-      NODE_OPTIONS: "--max_old_space_size=4096"
+      NODE_OPTIONS: "--max-old-space-size=3072"
       EXPO_NO_TELEMETRY: "1"
       CHOKIDAR_USEPOLLING: "1"
     volumes:
       - ./frontend:/workspace
-      - node_modules:/workspace/node_module
+      - node_modules:/workspace/node_modules
     ports:
       - "8081:8081"    # Metro
       - "19000:19000"  # Expo (http)

@@ -2,81 +2,42 @@
 set -euo pipefail
 cd /workspace
 
-# 0) package.json 깨졌다면 복구
+echo "▶ Frontend bootstrap (no server start here)"
+
+# 0) package.json 검증/복구
 if [ -f package.json ]; then
   if [ ! -s package.json ] || ! node -e "require('./package.json')" >/dev/null 2>&1; then
-    echo "package.json invalid -> reinit"
+    echo "• package.json invalid → reinit"
     rm -f package.json package-lock.json
     rm -rf node_modules
   fi
 fi
 
-# 1) 앱이 없으면 생성 (비대화식)
+# 1) 앱 스캐폴딩(최초 1회)
 if [ ! -f package.json ]; then
-  echo "Creating Expo app..."
+  echo "• Creating Expo app (non-interactive)..."
   npx --yes create-expo-app@latest . --template blank --no-install
 fi
 
-# 2) 의존성 설치 (idempotent)
+# 2) 의존성 설치
 if [ ! -d node_modules ]; then
-  echo "Installing deps..."
+  echo "• npm install"
   npm install
-  npm i nativewind tailwindcss postcss react-native-reanimated
-  npx tailwindcss init --full || true
 fi
 
-# 3) 웹 실행이라면 웹 의존성 보장
-#    (--web로 기동하므로 react-native-web, react-dom, @expo/metro-runtime 필요)
-if ! node -e "require.resolve('react-native-web')" >/dev/null 2>&1; then
-  echo "Installing web deps for Expo..."
-  npx expo install react-native-web react-dom @expo/metro-runtime
+# 3) Expo / Reanimated 보장
+node -e "require.resolve('expo/package.json')" >/dev/null 2>&1 || npm i expo@^51
+npx expo install react-native-reanimated || npm i react-native-reanimated
+
+# 4) (최종 기준) NativeWind/Tailwind는 사용하지 않음 → 잔재 제거
+npm remove nativewind tailwindcss postcss >/dev/null 2>&1 || true
+rm -f metro.config.js tailwind.config.js global.css
+
+# 5) 웹 의존성(필요 시)
+if [ "${USE_WEB:-0}" = "1" ]; then
+  npx expo install react-native-web react-dom @expo/metro-runtime || true
 fi
 
-# 4) Tailwind/Babel 설정 보증
-cat > tailwind.config.js <<'JS'
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./App.{js,jsx,ts,tsx}",
-    "./app/**/*.{js,jsx,ts,tsx}",
-    "./components/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: { extend: {} },
-  plugins: [],
-}
-JS
-
-cat > babel.config.js <<'JS'
-module.exports = function(api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'],
-    plugins: ['nativewind/babel'],
-  };
-};
-JS
-
-# 5) 엔트리 보증: index.js + App.tsx
-if [ ! -f index.js ]; then
-cat > index.js <<'JS'
-import { registerRootComponent } from 'expo';
-import App from './App';
-registerRootComponent(App);
-JS
-fi
-
-if [ ! -f App.tsx ] && [ ! -f App.js ]; then
-cat > App.tsx <<'TSX'
-import { Text, View } from 'react-native';
-export default function App() {
-  return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-2xl font-bold">Hello from Expo + NativeWind 👋</Text>
-    </View>
-  );
-}
-TSX
-fi
-
-# 6) Expo 기동 (LAN + Web)
-exec npx expo start --lan --port 19000 --clear --web
+# 6) 컨테이너 생존(서버 미기동)
+echo "✓ Frontend ready. Waiting… (Expo will be started by start-dev.sh)"
+tail -f /dev/null

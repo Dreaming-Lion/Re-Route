@@ -2,31 +2,7 @@
   "expo": {
     "name": "Re-Route",
     "slug": "re-route",
-    "scheme": "reroute",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "enabled": true
-    },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "permissions": []
-    },
-    "web": {
-      "bundler": "metro"
-    }
+    "entryPoint": "./index.js",
+    "web": { "bundler": "metro" }
   }
 }
