@@ -103,6 +103,32 @@ fi
 # 6) ensure Reanimated (expo-install preferred)
 node -e "require.resolve('react-native-reanimated/package.json')" >/dev/null 2>&1 || npx expo install react-native-reanimated || npm i react-native-reanimated
 
+# 6.1) 필수 네비/안전영역/제스처/그라데이션 보장
+declare -a PKGS=()
+ensure () {
+  local pkg="$1"
+  node -e "require.resolve('${pkg}/package.json')" >/dev/null 2>&1 || PKGS+=("$pkg")
+}
+ensure "@react-navigation/native"
+ensure "@react-navigation/native-stack"
+ensure "@react-navigation/bottom-tabs"
+ensure "react-native-screens"
+ensure "react-native-safe-area-context"
+ensure "react-native-gesture-handler"
+ensure "expo-linear-gradient"
+
+if [ ${#PKGS[@]} -gt 0 ]; then
+  echo "• Installing missing Expo deps: ${PKGS[*]}"
+  npx expo install "${PKGS[@]}" || npm i "${PKGS[@]}"
+else
+  echo "• Expo deps OK"
+fi
+
+# 6.2) gesture-handler는 엔트리 최상단에서 import (런타임 오류 예방)
+if [ -f App.tsx ]; then
+  grep -q 'react-native-gesture-handler' App.tsx 2>/dev/null || sed -i '1i import "react-native-gesture-handler";' App.tsx
+fi
+
 # 7) REMOVE NativeWind/Tailwind completely (final baseline = no NativeWind)
 npm remove nativewind tailwindcss postcss >/dev/null 2>&1 || true
 rm -f metro.config.js tailwind.config.js global.css

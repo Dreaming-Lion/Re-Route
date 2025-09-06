@@ -1,6 +1,7 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 cd /workspace
+export EXPO_NO_INTERACTIVE=1
 
 echo "▶ Frontend bootstrap (no server start here)"
 
@@ -19,7 +20,7 @@ if [ ! -f package.json ]; then
   npx --yes create-expo-app@latest . --template blank --no-install
 fi
 
-# 2) 의존성 설치
+# 2) 기본 의존성
 if [ ! -d node_modules ]; then
   echo "• npm install"
   npm install
@@ -29,15 +30,49 @@ fi
 node -e "require.resolve('expo/package.json')" >/dev/null 2>&1 || npm i expo@^51
 npx expo install react-native-reanimated || npm i react-native-reanimated
 
-# 4) (최종 기준) NativeWind/Tailwind는 사용하지 않음 → 잔재 제거
+# 3.1) 필수 패키지 보장 (sh 버전)
+NEED=""
+ensure() {
+  PKG="$1"
+  node -e "require.resolve('${PKG}/package.json')" >/dev/null 2>&1 || NEED="$NEED $PKG"
+}
+ensure "@react-navigation/native"
+ensure "@react-navigation/native-stack"
+ensure "@react-navigation/bottom-tabs"
+ensure "react-native-screens"
+ensure "react-native-safe-area-context"
+ensure "react-native-gesture-handler"
+ensure "expo-linear-gradient"
+ensure "expo-router"
+
+if [ -n "$NEED" ]; then
+  echo "• Installing missing Expo deps:$NEED"
+  # shellcheck disable=SC2086
+  npx expo install $NEED || npm i $NEED
+else
+  echo "• Expo deps OK"
+fi
+
+if [ -f app/_layout.tsx ]; then
+  grep -q 'react-native-gesture-handler' app/_layout.tsx 2>/dev/null || \
+    sed -i '1i import "react-native-gesture-handler";' app/_layout.tsx
+fi
+
+if [ ! -f babel.config.js ]; then
+  npm i -D @babel/core@^7 babel-preset-expo@~11.0.0
+  cat > babel.config.js <<'JS'
+module.exports = function(api){
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: ['react-native-reanimated/plugin'], // MUST be last
+  };
+};
+JS
+fi
+
 npm remove nativewind tailwindcss postcss >/dev/null 2>&1 || true
 rm -f metro.config.js tailwind.config.js global.css
 
-# 5) 웹 의존성(필요 시)
-if [ "${USE_WEB:-0}" = "1" ]; then
-  npx expo install react-native-web react-dom @expo/metro-runtime || true
-fi
-
-# 6) 컨테이너 생존(서버 미기동)
 echo "✓ Frontend ready. Waiting… (Expo will be started by start-dev.sh)"
 tail -f /dev/null
