@@ -15,4 +15,7 @@
 
 # Docker 컨테이너 종료
 ./stop.sh
+
+# Docker 컨테이너 삭제
+./clean-docker.sh
 ```
