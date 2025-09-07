@@ -44,6 +44,7 @@ ensure "react-native-safe-area-context"
 ensure "react-native-gesture-handler"
 ensure "expo-linear-gradient"
 ensure "expo-router"
+ensure "expo-image-picker"
 
 if [ -n "$NEED" ]; then
   echo "• Installing missing Expo deps:$NEED"

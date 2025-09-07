@@ -116,6 +116,7 @@ ensure "react-native-screens"
 ensure "react-native-safe-area-context"
 ensure "react-native-gesture-handler"
 ensure "expo-linear-gradient"
+ensure "expo-image-picker"
 
 if [ ${#PKGS[@]} -gt 0 ]; then
   echo "• Installing missing Expo deps: ${PKGS[*]}"

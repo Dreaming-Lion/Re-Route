@@ -1,5 +1,7 @@
 // theme/tokens.ts
 export type Palette = {
+  text: ColorValue | undefined;
+  mutedText: ColorValue | undefined;
   background: string; foreground: string;
   card: string; cardForeground: string;
   popover: string; popoverForeground: string;
