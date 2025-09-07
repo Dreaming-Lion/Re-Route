@@ -28,7 +28,7 @@ export default function SearchScreen() {
       Alert.alert("입력 필요", "출발지와 목적지를 모두 입력해 주세요.");
       return;
     }
-    router.push({ pathname: "/route-detail", params: { origin, destination } });
+    router.push({ pathname: "/route-result", params: { origin, destination } });
   };
 
   const swap = () => {
