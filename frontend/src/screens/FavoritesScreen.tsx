@@ -1,6 +1,6 @@
 // src/screens/FavoritesScreen.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, TextInput, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, TextInput, Alert, ScrollView } from "react-native";
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
 import { Icon } from "../components/common/Icon";
@@ -50,7 +50,7 @@ export default function FavoritesScreen() {
     <View style={styles.screen}>
       <Header title="즐겨찾는 장소" />
 
-      <View style={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
         {/* ── 장소 검색/추가 카드 (상단) ───────────────────────── */}
         <View style={[s.searchCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.text, { fontWeight: "800", marginBottom: 8 }]}>장소 추가</Text>
@@ -82,14 +82,11 @@ export default function FavoritesScreen() {
             />
           </View>
 
-          {/* 액션 버튼들 (왼쪽: 흰색계열, 오른쪽: 연파랑 단색) */}
+          {/* 액션 버튼들 (왼쪽: 아주 연한 블루, 오른쪽: 연파랑 단색) */}
           <View style={{ flexDirection: "row", gap: 10, marginTop: 6 }}>
-            <Pressable
-              onPress={() => router.push("/map-pick")}
-              style={[s.btnWhite, { backgroundColor: colors.card, borderColor: "#cfefff" }]}
-            >
+            <Pressable onPress={() => router.push("/map-pick")} style={s.btnPaleBlue}>
               <Icon name="map-outline" color="#0f172a" />
-              <Text style={s.btnWhiteText}>지도에서 선택</Text>
+              <Text style={s.btnPaleBlueText}>지도에서 선택</Text>
             </Pressable>
 
             <Pressable onPress={addFavorite} style={s.btnBlue}>
@@ -139,7 +136,7 @@ export default function FavoritesScreen() {
             </Pressable>
           </View>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -167,8 +164,8 @@ const s = StyleSheet.create({
   },
   input: { flex: 1, marginLeft: 8, fontSize: 15 },
 
-  // 흰색 계열 버튼
-  btnWhite: {
+  // 아주 연한 파란 느낌의 버튼 (지도에서 선택)
+  btnPaleBlue: {
     flex: 1,
     height: 44,
     borderRadius: 12,
@@ -176,11 +173,13 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
+    backgroundColor: "#F6FAFF", // 흰색에 파란 기운만 살짝
     borderWidth: 1,
+    borderColor: "#CFEFFF",     // 팔레트와 조화
   },
-  btnWhiteText: { fontWeight: "800", color: "#0f172a" },
+  btnPaleBlueText: { fontWeight: "800", color: "#0f172a" },
 
-  // 연파랑 단색 버튼
+  // 연파랑 단색 버튼 (즐겨찾기 추가)
   btnBlue: {
     flex: 1,
     height: 44,
@@ -189,9 +188,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#cfefff",
+    backgroundColor: "#CFEFFF",
     borderWidth: 1,
-    borderColor: "#cfe9f9ff",
+    borderColor: "#B7E3FF",
   },
   btnBlueText: { fontWeight: "800", color: "#0f172a" },
 });

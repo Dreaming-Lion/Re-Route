@@ -115,7 +115,6 @@ export default function HomeScreen() {
           <ActionCard
             label="사용 가이드"
             icon="flash-outline"
-            // ✅ 로그인 없이 진입
             onPress={() => router.push("/guide")}
             colors={colors}
           />
@@ -176,13 +175,13 @@ export default function HomeScreen() {
             이 기능을 사용하려면 로그인이 필요해요.
           </Text>
 
-          {/* ✅ 로그인: /login 이동 (그라데이션 유지) */}
+          {/* 로그인: /login 이동 (그라데이션 유지) */}
           <Pressable
             onPress={() => {
               setAuthVisible(false);
               router.push("/login");
             }}
-            style={({ pressed }) => [s.authBtnShadow, pressed && s.pressed]}
+            style={({ pressed }) => [s.authBtnShadow, pressed && s.pressed, { width: "100%" }]}
           >
             <LinearGradient
               colors={["#cfefff", "#d7f7e9"]}
@@ -195,8 +194,13 @@ export default function HomeScreen() {
             </LinearGradient>
           </Pressable>
 
-          <Pressable onPress={() => setAuthVisible(false)} style={s.authClose}>
-            <Text style={{ color: colors.mutedText }}>닫기</Text>
+          {/* ✅ 닫기 버튼: 로그인 버튼과 동일 폭 */}
+          <Pressable
+            onPress={() => setAuthVisible(false)}
+            style={({ pressed }) => [s.authClose, pressed && { opacity: 0.9 }]}
+            hitSlop={8}
+          >
+            <Text style={s.authCloseText}>닫기</Text>
           </Pressable>
         </View>
       </Modal>
@@ -338,16 +342,22 @@ const s = StyleSheet.create({
     gap: 6,
   },
   authLoginText: { fontSize: 15, fontWeight: "800", color: "#0f172a" },
-  logoutBtn: {
+
+  // 닫기 버튼: 로그인 버튼과 동일한 높이/폭
+  authClose: {
+    width: "100%",
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#cfefff",     // 연파랑 테두리
+    backgroundColor: "#F6FAFF", // 아주 옅은 블루 배경
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 10,
-    borderWidth: 1,
+    marginTop: 8,
   },
-  logoutText: { fontSize: 15, fontWeight: "800", color: "#374151" },
-  authClose: { alignSelf: "center", paddingVertical: 10 },
+  authCloseText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#0f172a",
+  },
 });

@@ -1,6 +1,9 @@
 // src/screens/SearchScreen.tsx
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from "react-native";
+import {
+  View, Text, TextInput, Pressable, StyleSheet, Alert,
+  ScrollView, KeyboardAvoidingView, Platform
+} from "react-native"; // ← ScrollView, KeyboardAvoidingView 추가
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
 import { Icon } from "../components/common/Icon";
@@ -13,7 +16,7 @@ const recommended = [
   { name: "건국대학교", desc: "충주시 단월동 322", icon: "school-outline" },
 ];
 
-const GRAD = ["#cfefff", "#d7f7e9"]; // 팔레트 유지
+const GRAD = ["#cfefff", "#d7f7e9"];
 
 export default function SearchScreen() {
   const { styles, colors, radii } = useTheme();
@@ -39,121 +42,131 @@ export default function SearchScreen() {
   return (
     <View style={styles.screen}>
       <Header title="목적지 검색" />
-      <View style={{ padding: 16 }}>
-        {/* 상단 검색 카드 (홈 스크린 스타일 적용) */}
-        <View
-          style={[
-            s.searchCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
+
+      {/* ✅ 스크롤 가능 + 키보드 회피 */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* 출발지 */}
-          <View style={[s.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Icon name="navigate-outline" />
-            <TextInput
-              value={origin}
-              onChangeText={setOrigin}
-              placeholder="출발지 입력"
-              placeholderTextColor={colors.mutedForeground}
-              style={s.input}
-              returnKeyType="next"
-            />
-          </View>
-
-          {/* 스왑 버튼 */}
-          <Pressable onPress={swap} style={s.swapBtn}>
-            <Icon name="swap-vertical" />
-          </Pressable>
-
-          {/* 목적지 */}
-          <View style={[s.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Icon name="location-outline" />
-            <TextInput
-              value={destination}
-              onChangeText={setDestination}
-              placeholder="목적지 입력"
-              placeholderTextColor={colors.mutedForeground}
-              style={s.input}
-              returnKeyType="search"
-              onSubmitEditing={goRouteDetail}
-            />
-          </View>
-
-          {/* 검색 버튼 */}
-          <Pressable onPress={goRouteDetail} style={s.searchBtnShadow}>
-            <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.searchBtn}>
-              <Icon name="search" />
-              <View style={{ width: 6 }} />
-              <View><Text style={s.searchBtnText}>경로 검색</Text></View>
-            </LinearGradient>
-          </Pressable>
-        </View>
-
-        {/* 최근 목적지 */}
-        {recent.length > 0 && (
-          <>
-            <Text style={[styles.text, { fontSize: 16, fontWeight: "600", marginTop: 16, marginBottom: 8 }]}>
-              최근 목적지
-            </Text>
-            {recent.map((item, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.card,
-                  {
-                    paddingVertical: 12,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                  },
-                ]}
-              >
-                <Pressable
-                  onPress={() => setDestination(item)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Icon name="time-outline" />
-                  <Text style={styles.text}>{item}</Text>
-                </Pressable>
-                <Pressable onPress={() => setRecent(recent.filter((_, i) => i !== idx))}>
-                  <Icon name="close" />
-                </Pressable>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* 추천 검색지 */}
-        <Text style={[styles.text, { fontSize: 16, fontWeight: "600", marginTop: 12, marginBottom: 8 }]}>
-          추천 검색지
-        </Text>
-        {recommended.map((p, i) => (
-          <Pressable
-            key={i}
-            onPress={() => setDestination(p.name)}
-            style={[styles.card, { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }]}
+          {/* 상단 검색 카드 */}
+          <View
+            style={[
+              s.searchCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: radii.lg,
-                backgroundColor: "#E8F7F4",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+            {/* 출발지 */}
+            <View style={[s.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <Icon name="navigate-outline" />
+              <TextInput
+                value={origin}
+                onChangeText={setOrigin}
+                placeholder="출발지 입력"
+                placeholderTextColor={colors.mutedForeground}
+                style={s.input}
+                returnKeyType="next"
+              />
+            </View>
+
+            {/* 스왑 버튼 */}
+            <Pressable onPress={swap} style={s.swapBtn}>
+              <Icon name="swap-vertical" />
+            </Pressable>
+
+            {/* 목적지 */}
+            <View style={[s.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <Icon name="location-outline" />
+              <TextInput
+                value={destination}
+                onChangeText={setDestination}
+                placeholder="목적지 입력"
+                placeholderTextColor={colors.mutedForeground}
+                style={s.input}
+                returnKeyType="search"
+                onSubmitEditing={goRouteDetail}
+              />
+            </View>
+
+            {/* 검색 버튼 */}
+            <Pressable onPress={goRouteDetail} style={s.searchBtnShadow}>
+              <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.searchBtn}>
+                <Icon name="search" />
+                <View style={{ width: 6 }} />
+                <View><Text style={s.searchBtnText}>경로 검색</Text></View>
+              </LinearGradient>
+            </Pressable>
+          </View>
+
+          {/* 최근 목적지 */}
+          {recent.length > 0 && (
+            <>
+              <Text style={[styles.text, { fontSize: 16, fontWeight: "600", marginTop: 16, marginBottom: 8 }]}>
+                최근 목적지
+              </Text>
+              {recent.map((item, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.card,
+                    {
+                      paddingVertical: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    },
+                  ]}
+                >
+                  <Pressable
+                    onPress={() => setDestination(item)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                  >
+                    <Icon name="time-outline" />
+                    <Text style={styles.text}>{item}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setRecent(recent.filter((_, i) => i !== idx))}>
+                    <Icon name="close" />
+                  </Pressable>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* 추천 검색지 */}
+          <Text style={[styles.text, { fontSize: 16, fontWeight: "600", marginTop: 12, marginBottom: 8 }]}>
+            추천 검색지
+          </Text>
+          {recommended.map((p, i) => (
+            <Pressable
+              key={i}
+              onPress={() => setDestination(p.name)}
+              style={[styles.card, { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }]}
             >
-              <Icon name={p.icon} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.text, { fontWeight: "600" }]}>{p.name}</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{p.desc}</Text>
-            </View>
-            <Icon name="location-outline" />
-          </Pressable>
-        ))}
-      </View>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radii.lg,
+                  backgroundColor: "#E8F7F4",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name={p.icon} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.text, { fontWeight: "600" }]}>{p.name}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{p.desc}</Text>
+              </View>
+              <Icon name="location-outline" />
+            </Pressable>
+          ))}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -164,7 +177,6 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     marginBottom: 8,
-    // 홈 스크린 느낌의 은은한 그림자
     shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowRadius: 8,
