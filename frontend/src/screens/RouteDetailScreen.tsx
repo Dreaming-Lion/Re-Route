@@ -1,20 +1,11 @@
 // src/screens/RouteDetailScreen.tsx
 import React from "react";
-import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-
-let MapView: any, Marker: any;
-try {
-  const maps = require("react-native-maps");
-  MapView = maps.default;
-  Marker = maps.Marker;
-} catch (e) {
-  MapView = null;
-}
 
 const GRAD = ["#cfefff", "#d7f7e9"];
 
@@ -32,25 +23,15 @@ export default function RouteDetailScreen() {
     <View style={[themeStyles.screen, { paddingBottom: 0 }]}>
       <Header title="버스 위치" onBack={() => router.back()} />
 
-      {/* 맵 영역 */}
+      {/* 맵 영역(프로토타입: 흰색 카드 플레이스홀더) */}
       <View style={s.mapWrap}>
-        {MapView ? (
-          <MapView
-            style={StyleSheet.absoluteFill}
-            initialRegion={{
-              latitude: 37.4981,
-              longitude: 127.0276,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker coordinate={{ latitude: 37.4981, longitude: 127.0276 }}>
-              <Ionicons name="bus" size={24} color="#3B82F6" />
-            </Marker>
-          </MapView>
-        ) : (
-          <LinearGradient colors={GRAD} start={{ x: 0.2, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-        )}
+        <View style={s.placeholderWrap}>
+          <View style={[s.placeholderCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="map-outline" size={22} color="#94a3b8" />
+            <Text style={s.placeholderTitle}>지도 영역 (프로토타입)</Text>
+            <Text style={s.placeholderSub}>여기에 지도/경로가 표시됩니다</Text>
+          </View>
+        </View>
 
         {/* 상단 위치 카드 */}
         <View style={[s.topInfo, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -91,7 +72,7 @@ export default function RouteDetailScreen() {
               key={i}
               style={[
                 s.row,
-                i === 0 && { backgroundColor: "rgba(207,239,255,0.35)" }, // 첫 행 하이라이트(연한 그라데이션 톤)
+                i === 0 && { backgroundColor: "rgba(207,239,255,0.35)" }, // 첫 행 하이라이트
                 { borderColor: colors.border },
               ]}
             >
@@ -127,7 +108,30 @@ export default function RouteDetailScreen() {
 const s = StyleSheet.create({
   mapWrap: { flex: 1 },
 
-  // 상단 정보 카드
+  // ───────── Placeholder (Map 자리)
+  placeholderWrap: {
+    ...StyleSheet.absoluteFillObject,
+    padding: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeholderCard: {
+    width: "100%",
+    height: "85%",
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  placeholderTitle: { marginTop: 6, fontSize: 14, fontWeight: "800", color: "#0f172a" },
+  placeholderSub: { marginTop: 2, fontSize: 12, color: "#64748B" },
+
+  // ───────── 상단 정보 카드
   topInfo: {
     position: "absolute",
     top: 10,
@@ -146,7 +150,7 @@ const s = StyleSheet.create({
   topEta: { fontSize: 16, fontWeight: "900" },
   iconBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 14 },
 
-  // 플로팅 버튼
+  // ───────── 플로팅 버튼
   fabsCol: { position: "absolute", right: 12, top: 110, alignItems: "center", gap: 10 },
   fab: {
     width: 40,
@@ -172,7 +176,7 @@ const s = StyleSheet.create({
     elevation: 4,
   },
 
-  // 바텀시트
+  // ───────── 바텀시트
   sheet: {
     position: "absolute",
     left: 12,
@@ -213,7 +217,7 @@ const s = StyleSheet.create({
   busEta: { fontSize: 18, fontWeight: "900", lineHeight: 22 },
   busSub: { fontSize: 11, fontWeight: "600", marginTop: 2 },
 
-  // 버튼
+  // ───────── 버튼
   btnShadow: { borderRadius: 12, overflow: "hidden", marginTop: 6 },
   primaryBtn: {
     height: 46,

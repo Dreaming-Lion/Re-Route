@@ -48,16 +48,15 @@ export default function MyPageScreen() {
             <Text style={s.caption}>선량한 시민</Text>
           </View>
 
-          {/* ✅ 개인정보 수정 버튼: 그라데이션 → 솔리드 */}
+          {/* ✅ 개인정보 수정 버튼: 그라데이션 */}
           <Pressable
             onPress={() => router.push("/edit-profile")}
-            style={({ pressed }) => [
-              s.editBtnSolid,
-              pressed && { opacity: 0.9 },
-            ]}
+            style={({ pressed }) => [s.editBtnShadow, pressed && { opacity: 0.95 }]}
           >
-            <Ionicons name="create-outline" size={16} color="#0f172a" />
-            <Text style={s.editBtnText}>개인정보 수정</Text>
+            <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.editBtnGrad}>
+              <Ionicons name="create-outline" size={16} color="#0f172a" />
+              <Text style={s.editBtnText}>개인정보 수정</Text>
+            </LinearGradient>
           </Pressable>
         </View>
 
@@ -151,8 +150,9 @@ const s = StyleSheet.create({
   name: { fontSize: 18, fontWeight: "800", color: "#0f172a" },
   caption: { marginTop: 2, fontSize: 12, color: "#475569" },
 
-  // ✅ 솔리드 버튼 (그라데이션 없음)
-  editBtnSolid: {
+  // ✅ 그라데이션 버튼
+  editBtnShadow: { borderRadius: 12, overflow: "hidden" },
+  editBtnGrad: {
     height: 36,
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -160,9 +160,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#d7f7e9",      // 팔레트 유지: 민트 톤
     borderWidth: 1,
-    borderColor: "#cfefff",          // 팔레트의 다른 끝으로 보더
+    borderColor: "rgba(255,255,255,0.6)",
   },
   editBtnText: { fontSize: 13, fontWeight: "800", color: "#0f172a" },
 

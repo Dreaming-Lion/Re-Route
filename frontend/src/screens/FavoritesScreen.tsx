@@ -6,8 +6,6 @@ import { useTheme } from "../theme/ThemeProvider";
 import { Icon } from "../components/common/Icon";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
-const GRAD = ["#cfefff", "#d7f7e9"];
-
 export default function FavoritesScreen() {
   const { styles, colors, radii } = useTheme();
   const router = useRouter();
@@ -20,7 +18,7 @@ export default function FavoritesScreen() {
   // 상단 카드 입력값
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [pickedEmoji, setPickedEmoji] = useState< string | null >(null);
+  const [pickedEmoji, setPickedEmoji] = useState<string | null>(null);
 
   // map-pick에서 되돌아올 때 입력란에 채워 넣기
   const params = useLocalSearchParams<{ name?: string; address?: string; emoji?: string; addedAt?: string }>();
@@ -63,7 +61,7 @@ export default function FavoritesScreen() {
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="장소명 (예: 집)"
+              placeholder="장소명 (예: 집, 회사 등)"
               placeholderTextColor={colors.mutedForeground}
               style={s.input}
               returnKeyType="next"
@@ -84,22 +82,19 @@ export default function FavoritesScreen() {
             />
           </View>
 
-          {/* 액션 버튼들 */}
+          {/* 액션 버튼들 (왼쪽: 흰색계열, 오른쪽: 연파랑 단색) */}
           <View style={{ flexDirection: "row", gap: 10, marginTop: 6 }}>
             <Pressable
               onPress={() => router.push("/map-pick")}
-              style={[
-                s.btnOutline,
-                { borderColor: "#cfefff", backgroundColor: "#f6fffb" },
-              ]}
+              style={[s.btnWhite, { backgroundColor: colors.card, borderColor: "#cfefff" }]}
             >
-              <Icon name="map-outline" />
-              <Text style={s.btnOutlineText}>지도에서 선택</Text>
+              <Icon name="map-outline" color="#0f172a" />
+              <Text style={s.btnWhiteText}>지도에서 선택</Text>
             </Pressable>
 
-            <Pressable onPress={addFavorite} style={s.btnSolid}>
-              <Icon name="add" />
-              <Text style={s.btnSolidText}>즐겨찾기에 추가</Text>
+            <Pressable onPress={addFavorite} style={s.btnBlue}>
+              <Icon name="add" color="#0f172a" />
+              <Text style={s.btnBlueText}>즐겨찾기에 추가</Text>
             </Pressable>
           </View>
         </View>
@@ -172,20 +167,21 @@ const s = StyleSheet.create({
   },
   input: { flex: 1, marginLeft: 8, fontSize: 15 },
 
-  // 버튼들
-  btnOutline: {
+  // 흰색 계열 버튼
+  btnWhite: {
     flex: 1,
     height: 44,
     borderRadius: 12,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
+    borderWidth: 1,
   },
-  btnOutlineText: { fontWeight: "800", color: "#0f172a" },
+  btnWhiteText: { fontWeight: "800", color: "#0f172a" },
 
-  btnSolid: {
+  // 연파랑 단색 버튼
+  btnBlue: {
     flex: 1,
     height: 44,
     borderRadius: 12,
@@ -193,9 +189,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "#d7f7e9",
+    backgroundColor: "#cfefff",
     borderWidth: 1,
-    borderColor: "#cfefff",
+    borderColor: "#cfe9f9ff",
   },
-  btnSolidText: { fontWeight: "800", color: "#0f172a" },
+  btnBlueText: { fontWeight: "800", color: "#0f172a" },
 });
