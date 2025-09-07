@@ -68,15 +68,6 @@ export default function EditProfileScreen() {
       />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* 상단 안내 카드 */}
-        <View style={[s.hero, { borderColor: colors.border }]}>
-          <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.heroOverlay} />
-          <Text style={s.heroTitle}>개인정보 수정</Text>
-          <Text style={[s.heroSub, { color: "#3b556d" }]}>
-            닉네임과 프로필 사진, 자기소개를 변경할 수 있어요. 아이디는 변경할 수 없습니다.
-          </Text>
-        </View>
-
         {/* 카드 1: 기본 정보 (사진 + 닉네임 + 자기소개) */}
         <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={s.cardTitle}>기본 정보</Text>

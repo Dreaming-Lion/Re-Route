@@ -5,7 +5,7 @@ import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icon } from "../common/Icon";
 import { useTheme } from "../../theme/ThemeProvider";
 
-const ACTIVE_BG = "#d7f7e9";   // 개인정보 수정 버튼의 솔리드 배경
+const ACTIVE_BG = "#cfefff";   // 개인정보 수정 버튼의 솔리드 배경
 const ACTIVE_BORDER = "#cfefff";
 const ACTIVE_TINT = "#0f172a";
 
@@ -14,7 +14,7 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
 
   return (
     <View style={[styles.wrap, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-      {state.routes.map((route, index) => {
+      {state.routes.map((route: { key: React.Key | null | undefined; name: string; }, index: any) => {
         const focused = state.index === index;
         const onPress = () => {
           const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
