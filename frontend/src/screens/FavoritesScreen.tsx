@@ -1,49 +1,98 @@
 // src/screens/FavoritesScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Pressable, StyleSheet, TextInput, Alert, ScrollView } from "react-native";
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
 import { Icon } from "../components/common/Icon";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+type FavItem = {
+  id: number;
+  name: string;
+  address: string;
+  emoji: string;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+const FAVORITES_KEY = "@favorites_v1";
+const LAST_PICK_KEY = "@last_pick_v1";
 
 export default function FavoritesScreen() {
   const { styles, colors, radii } = useTheme();
   const router = useRouter();
 
-  const [favorites, setFavorites] = useState([
-    { id: 1, name: "건국대학교 충주캠퍼스", address: "충주시 단월동 322", emoji: "🎓" },
-    { id: 2, name: "충주역", address: "충주시 연수동 1135-1", emoji: "🚉" },
-  ]);
-
-  // 상단 카드 입력값
+  const [favorites, setFavorites] = useState<FavItem[]>([]);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [pickedEmoji, setPickedEmoji] = useState<string | null>(null);
+  const [pickedCoord, setPickedCoord] = useState<{ lat?: number | null; lng?: number | null }>({});
 
-  // map-pick에서 되돌아올 때 입력란에 채워 넣기
-  const params = useLocalSearchParams<{ name?: string; address?: string; emoji?: string; addedAt?: string }>();
+  // 최초: 즐겨찾기 복구
   useEffect(() => {
-    if (params?.name || params?.address) {
-      setName(String(params.name ?? ""));
-      setAddress(String(params.address ?? ""));
-      setPickedEmoji(params.emoji ? String(params.emoji) : "📍");
-      // 파라미터 비우기
-      router.replace("/(tabs)/favorites");
-    }
-  }, [params?.addedAt]);
+    (async () => {
+        const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw) as FavItem[];
+          if (Array.isArray(saved)) {
+            setFavorites(saved);
+            return;
+          }
+        }
+    })();
+  }, []);
+
+  // 변경 시 저장
+  useEffect(() => {
+    (async () => {
+      try {
+        await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+      } catch {}
+    })();
+  }, [favorites]);
+
+  // map-pick에서 돌아오면: 저장된 LAST_PICK_KEY 읽어 입력란 채우기
+  const params = useLocalSearchParams<{ addedAt?: string }>();
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const raw = await AsyncStorage.getItem(LAST_PICK_KEY);
+          if (!raw) return;
+          const p = JSON.parse(raw) as { name?: string; address?: string; emoji?: string; lat?: number; lng?: number };
+          setName(String(p.name ?? ""));
+          setAddress(String(p.address ?? ""));
+          setPickedEmoji(p.emoji ? String(p.emoji) : "📍");
+          setPickedCoord({ lat: p.lat, lng: p.lng });
+        } catch {}
+      })();
+    }, [params?.addedAt]) // 쿼리 변화 시 재조회
+  );
 
   const addFavorite = () => {
     if (!name.trim() || !address.trim()) {
       Alert.alert("입력 필요", "장소명과 주소를 모두 입력해 주세요.");
       return;
     }
-    setFavorites(prev => [
-      { id: Date.now(), name: name.trim(), address: address.trim(), emoji: pickedEmoji ?? "📍" },
-      ...prev,
-    ]);
+    const item: FavItem = {
+      id: Date.now(),
+      name: name.trim(),
+      address: address.trim(),
+      emoji: pickedEmoji ?? "📍",
+      lat: pickedCoord.lat ?? null,
+      lng: pickedCoord.lng ?? null,
+    };
+    setFavorites(prev => [item, ...prev]);
     setName("");
     setAddress("");
     setPickedEmoji(null);
+    setPickedCoord({});
+  };
+
+  const removeFavorite = (id: number) => {
+    setFavorites(prev => prev.filter(x => x.id !== id));
   };
 
   return (
@@ -51,7 +100,7 @@ export default function FavoritesScreen() {
       <Header title="즐겨찾는 장소" />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* ── 장소 검색/추가 카드 (상단) ───────────────────────── */}
+        {/* 장소 추가 카드 */}
         <View style={[s.searchCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.text, { fontWeight: "800", marginBottom: 8 }]}>장소 추가</Text>
 
@@ -82,7 +131,7 @@ export default function FavoritesScreen() {
             />
           </View>
 
-          {/* 액션 버튼들 (왼쪽: 아주 연한 블루, 오른쪽: 연파랑 단색) */}
+          {/* 액션 버튼 */}
           <View style={{ flexDirection: "row", gap: 10, marginTop: 6 }}>
             <Pressable onPress={() => router.push("/map-pick")} style={s.btnPaleBlue}>
               <Icon name="map-outline" color="#0f172a" />
@@ -96,7 +145,7 @@ export default function FavoritesScreen() {
           </View>
         </View>
 
-        {/* ── 즐겨찾기 목록 (카드 아래) ───────────────────────── */}
+        {/* 목록 */}
         <Text style={[styles.text, { fontSize: 16, fontWeight: "800", marginTop: 10, marginBottom: 8 }]}>
           내 즐겨찾기
         </Text>
@@ -110,7 +159,7 @@ export default function FavoritesScreen() {
             ]}
           >
             <Pressable
-              onPress={() => router.push("/route-result")}
+              onPress={() => router.push("/route-result")} // lat/lng가 있으면 여기서 활용 가능
               style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}
             >
               <View
@@ -131,7 +180,7 @@ export default function FavoritesScreen() {
               </View>
             </Pressable>
 
-            <Pressable onPress={() => setFavorites(prev => prev.filter(x => x.id !== f.id))}>
+            <Pressable onPress={() => removeFavorite(f.id)}>
               <Icon name="trash-outline" color="#b34a3a" />
             </Pressable>
           </View>
@@ -163,34 +212,14 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   input: { flex: 1, marginLeft: 8, fontSize: 15 },
-
-  // 아주 연한 파란 느낌의 버튼 (지도에서 선택)
   btnPaleBlue: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 6,
-    backgroundColor: "#F6FAFF", // 흰색에 파란 기운만 살짝
-    borderWidth: 1,
-    borderColor: "#CFEFFF",     // 팔레트와 조화
+    flex: 1, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center",
+    flexDirection: "row", gap: 6, backgroundColor: "#F6FAFF", borderWidth: 1, borderColor: "#CFEFFF",
   },
   btnPaleBlueText: { fontWeight: "800", color: "#0f172a" },
-
-  // 연파랑 단색 버튼 (즐겨찾기 추가)
   btnBlue: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 6,
-    backgroundColor: "#CFEFFF",
-    borderWidth: 1,
-    borderColor: "#B7E3FF",
+    flex: 1, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center",
+    flexDirection: "row", gap: 6, backgroundColor: "#CFEFFF", borderWidth: 1, borderColor: "#B7E3FF",
   },
   btnBlueText: { fontWeight: "800", color: "#0f172a" },
 });

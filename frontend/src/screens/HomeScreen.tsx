@@ -1,16 +1,14 @@
 // src/screens/HomeScreen.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
   ScrollView,
-  Modal,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
 import { useRouter } from "expo-router";
@@ -29,14 +27,6 @@ type BusItem = {
 export default function HomeScreen() {
   const { styles: themeStyles, colors } = useTheme();
   const router = useRouter();
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authVisible, setAuthVisible] = useState(false);
-
-  const handleAuthGate = (onAuthed: () => void) => {
-    if (isLoggedIn) onAuthed();
-    else setAuthVisible(true);
-  };
 
   const busData: BusItem[] = useMemo(
     () => [
@@ -78,9 +68,9 @@ export default function HomeScreen() {
     <View style={themeStyles.screen}>
       <Header title="홈" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* 검색 바 (로그인 필요) */}
+        {/* 검색 바 (바로 이동) */}
         <Pressable
-          onPress={() => handleAuthGate(() => router.push("/search"))}
+          onPress={() => router.push("/search")}
           style={({ pressed }) => [
             s.searchBar,
             { borderColor: colors.border, backgroundColor: colors.card },
@@ -103,13 +93,13 @@ export default function HomeScreen() {
           <ActionCard
             label="길찾기"
             icon="navigate-outline"
-            onPress={() => handleAuthGate(() => router.push("/search"))}
+            onPress={() => router.push("/search")}
             colors={colors}
           />
           <ActionCard
             label="즐겨찾기"
             icon="heart-outline"
-            onPress={() => handleAuthGate(() => router.push("/favorites"))}
+            onPress={() => router.push("/favorites")}
             colors={colors}
           />
           <ActionCard
@@ -133,7 +123,7 @@ export default function HomeScreen() {
         {busData.map((b) => (
           <Pressable
             key={b.id}
-            onPress={() => handleAuthGate(() => router.push(`/bus/${b.id}`))}
+            onPress={() => router.push(`/bus/${b.id}`)}
             style={({ pressed }) => [
               s.busCard,
               {
@@ -148,8 +138,12 @@ export default function HomeScreen() {
                 <Text style={s.busBadgeText}>{b.number}</Text>
               </View>
               <View style={{ marginLeft: 12 }}>
-                <Text style={[s.busTitle, { color: colors.text }]}>{b.title}</Text>
-                <Text style={[s.busRoute, { color: colors.mutedText }]}>{b.route}</Text>
+                <Text style={[s.busTitle, { color: colors.text }]}>
+                  {b.title}
+                </Text>
+                <Text style={[s.busRoute, { color: colors.mutedText }]}>
+                  {b.route}
+                </Text>
               </View>
             </View>
 
@@ -160,50 +154,6 @@ export default function HomeScreen() {
           </Pressable>
         ))}
       </ScrollView>
-
-      {/* 인증 모달 */}
-      <Modal
-        visible={authVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setAuthVisible(false)}
-      >
-        <Pressable style={s.backdrop} onPress={() => setAuthVisible(false)} />
-        <View style={[s.authCard, { backgroundColor: colors.card }]}>
-          <Text style={[s.authTitle, { color: colors.text }]}>로그인 필요</Text>
-          <Text style={[s.authDesc, { color: colors.mutedText }]}>
-            이 기능을 사용하려면 로그인이 필요해요.
-          </Text>
-
-          {/* 로그인: /login 이동 (그라데이션 유지) */}
-          <Pressable
-            onPress={() => {
-              setAuthVisible(false);
-              router.push("/login");
-            }}
-            style={({ pressed }) => [s.authBtnShadow, pressed && s.pressed, { width: "100%" }]}
-          >
-            <LinearGradient
-              colors={["#cfefff", "#d7f7e9"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={s.authLoginBtn}
-            >
-              <Ionicons name="log-in-outline" size={18} color="#0f172a" />
-              <Text style={s.authLoginText}>로그인</Text>
-            </LinearGradient>
-          </Pressable>
-
-          {/* ✅ 닫기 버튼: 로그인 버튼과 동일 폭 */}
-          <Pressable
-            onPress={() => setAuthVisible(false)}
-            style={({ pressed }) => [s.authClose, pressed && { opacity: 0.9 }]}
-            hitSlop={8}
-          >
-            <Text style={s.authCloseText}>닫기</Text>
-          </Pressable>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -224,10 +174,7 @@ function ActionCard({
       onPress={onPress}
       style={({ pressed }) => [
         s.actionCard,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-        },
+        { backgroundColor: colors.card, borderColor: colors.border },
         pressed && s.pressed,
       ]}
     >
@@ -258,6 +205,7 @@ const s = StyleSheet.create({
     elevation: 1,
   },
   searchPlaceholder: { fontSize: 16 },
+
   actionsRow: {
     flexDirection: "row",
     gap: 12,
@@ -282,7 +230,9 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   actionLabel: { fontSize: 13, fontWeight: "600" },
+
   sectionTitle: { fontSize: 18, fontWeight: "800" },
+
   busCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -312,52 +262,4 @@ const s = StyleSheet.create({
   busRight: { alignItems: "flex-end" },
   busEta: { fontSize: 22, fontWeight: "900", lineHeight: 26 },
   busSub: { marginTop: 2, fontSize: 12, fontWeight: "600" },
-
-  // 인증 모달
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.25)" },
-  authCard: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 20,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  authTitle: { fontSize: 16, fontWeight: "800", marginBottom: 4 },
-  authDesc: { fontSize: 13, marginBottom: 14 },
-  authBtnShadow: { borderRadius: 12, overflow: "hidden" },
-  authLoginBtn: {
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 6,
-  },
-  authLoginText: { fontSize: 15, fontWeight: "800", color: "#0f172a" },
-
-  // 닫기 버튼: 로그인 버튼과 동일한 높이/폭
-  authClose: {
-    width: "100%",
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#cfefff",     // 연파랑 테두리
-    backgroundColor: "#F6FAFF", // 아주 옅은 블루 배경
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-  authCloseText: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#0f172a",
-  },
 });

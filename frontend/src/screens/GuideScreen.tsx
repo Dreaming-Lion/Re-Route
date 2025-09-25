@@ -101,7 +101,7 @@ export default function GuideScreen() {
         <Text style={[s.sectionTitle, { color: colors.text, marginTop: 16 }]}>자주 묻는 질문</Text>
         <FAQItem
           q="로그인 없이도 기능을 쓸 수 있나요?"
-          a="검색과 가이드는 로그인 없이 사용 가능해요. 즐겨찾기·알림 같은 개인화 기능은 로그인 후 이용해 주세요."
+          a="네, 본 서비스는 로그인 없이 사용이 가능합니다."
           colors={colors}
         />
         <FAQItem

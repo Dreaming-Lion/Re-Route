@@ -45,6 +45,11 @@ ensure "react-native-gesture-handler"
 ensure "expo-linear-gradient"
 ensure "expo-router"
 ensure "expo-image-picker"
+ensure "@react-native-async-storage/async-storage"
+ensure "@react-native-async-storage/async-storage react-native-webview"
+ensure "react-native-webview"
+ensure "expo-constants"
+
 
 if [ -n "$NEED" ]; then
   echo "• Installing missing Expo deps:$NEED"
