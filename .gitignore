@@ -1,7 +1,12 @@
+# Environment variables
 .env
+
+# Node modules
 node_modules/
+
+# Build / cache directories
 .expo/
 .parcel-cache/
-node_modules/
-.env
-.expo/
+
+# IDE
+.idea/
