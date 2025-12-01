@@ -31,3 +31,10 @@ logging:
     org.springframework.security: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+api:
+  tago:
+    key: ${TAGO_SERVICE_KEY}
+
+tago:
+  cityCode: 33020
