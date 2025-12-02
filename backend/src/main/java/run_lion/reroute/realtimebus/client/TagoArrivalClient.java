@@ -1,68 +1,71 @@
 package run_lion.reroute.realtimebus.client;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import run_lion.reroute.realtimebus.dto.RealtimeArrivalDto;
+import run_lion.reroute.realtimebus.dto.TagoArrivalResponse;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-@Service
+@Slf4j
+@Component
 @RequiredArgsConstructor
 public class TagoArrivalClient {
+
+    private final RestTemplate restTemplate;
 
     @Value("${api.tago.key}")
     private String serviceKey;
 
-    @Value("${tago.cityCode}")
+    @Value("${api.tago.cityCode}")
     private String cityCode;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    public List<RealtimeArrivalDto> getArrivals(String nodeId) {
 
-    public List<Map<String, Object>> getArrivalsByStation(String nodeId) {
+        String url =
+                "http://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList?" +
+                        "serviceKey=" + serviceKey +
+                        "&cityCode=" + cityCode +
+                        "&nodeId=" + nodeId +
+                        "&numOfRows=50&pageNo=1&_type=json";
 
-        String url = UriComponentsBuilder
-                .fromHttpUrl("http://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList")
-                .queryParam("serviceKey", serviceKey)
-                .queryParam("cityCode", cityCode)
-                .queryParam("nodeId", nodeId)
-                .queryParam("_type", "json")
-                .queryParam("numOfRows", 10)
-                .queryParam("pageNo", 1)
-                .toUriString();
+        log.info("[TAGO Request] {}", url);
 
-        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+        TagoArrivalResponse response =
+                restTemplate.getForObject(url, TagoArrivalResponse.class);
 
-        if (response == null) return Collections.emptyList();
+        List<RealtimeArrivalDto> result = new ArrayList<>();
 
-        Map<String, Object> outerResponse = (Map<String, Object>) response.get("response");
-        if (outerResponse == null) return Collections.emptyList();
-
-        Map<String, Object> body = (Map<String, Object>) outerResponse.get("body");
-        if (body == null) return Collections.emptyList();
-
-        Object itemsObj = body.get("items");
-        if (!(itemsObj instanceof Map)) {
-            // TAGO가 items="" 로 주는 이상한 케이스
-            return Collections.emptyList();
+        if (response == null ||
+                response.getResponse() == null ||
+                response.getResponse().getBody() == null ||
+                response.getResponse().getBody().getItems() == null) {
+            return result;
         }
 
-        Map<String, Object> items = (Map<String, Object>) itemsObj;
+        var items = response.getResponse().getBody().getItems().getItem();
+        if (items == null) return result;
 
-        Object itemObj = items.get("item");
+        // 배열 for-each
+        for (var item : items) {
 
-        if (itemObj == null)
-            return Collections.emptyList();
+            int seconds = item.getArrtime();
+            int minutes = (seconds + 59) / 60; // 초 → 분 (올림 처리)
 
-        if (itemObj instanceof List)
-            return (List<Map<String, Object>>) itemObj;
+            RealtimeArrivalDto dto = new RealtimeArrivalDto(
+                    item.getRouteid(),
+                    String.valueOf(item.getRouteno()),
+                    minutes,
+                    item.getArrprevstationcnt()
+            );
 
-        if (itemObj instanceof Map)
-            return List.of((Map<String, Object>) itemObj);
+            result.add(dto);
+        }
 
-        return Collections.emptyList();
+        return result;
     }
 }

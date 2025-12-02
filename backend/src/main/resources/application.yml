@@ -35,6 +35,4 @@ logging:
 api:
   tago:
     key: ${TAGO_SERVICE_KEY}
-
-tago:
-  cityCode: 33020
+    cityCode: 33020
