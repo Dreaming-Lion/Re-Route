@@ -1,4 +1,4 @@
-package run_lion.reroute.routing;
+package run_lion.reroute.routing.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -6,7 +6,6 @@ import run_lion.reroute.routing.dto.RouteResponse;
 import run_lion.reroute.routing.dto.RouteSearchRequest;
 import run_lion.reroute.routing.dto.StepResponse;
 import run_lion.reroute.routing.dto.StopCandidate;
-import run_lion.reroute.routing.service.RoutingStationResolver;
 import run_lion.reroute.routing.util.DistanceCalculator;
 
 import java.time.LocalDateTime;
@@ -22,7 +21,7 @@ public class RoutingAlgorithm {
     private final RoutingStationResolver stationResolver;
 
     public RouteResponse computeBestRoute(RouteSearchRequest request) {
-        // 출발지·도착지에서 가장 가까운 정류장 찾기
+        // 출발지, 도착지에서 가장 가까운 정류장 찾기
         Optional<StopCandidate> originOpt = stationResolver.findNearestStation(
                 request.getOriginLat(), request.getOriginLng());
         Optional<StopCandidate> destOpt = stationResolver.findNearestStation(
@@ -56,12 +55,13 @@ public class RoutingAlgorithm {
         StopCandidate originStop = originOpt.get();
         StopCandidate destStop = destOpt.get();
 
-        // 버스 구간: 아직 실시간 연동이 없으므로 임시값
-        int busTravelTime = 10;  // 버스 이동 10분으로 가정
-        int waitTime = 0;        // 버스 대기시간 0분
-        String busLine = "UNKNOWN"; // 노선 정보 미상
+        // 버스 구간
+        // 아직 실시간 연동이 없어 더미 데이터
+        int busTravelTime = 10;
+        int waitTime = 0;
+        String busLine = "UNKNOWN";
 
-        // 도보 시간: A파트의 StopCandidate와 DistanceCalculator 활용
+        // 도보 시간: StopCandidate와 DistanceCalculator
         int walkToBus = originStop.getWalkTimeFromOrigin();
         double destDistance = DistanceCalculator.calculateDistance(
                 destStop.getLat(), destStop.getLon(),
@@ -74,7 +74,6 @@ public class RoutingAlgorithm {
         LocalDateTime eta = LocalDateTime.now().plusMinutes(totalTime);
         String etaText = eta.format(DateTimeFormatter.ofPattern("HH:mm")) + " 도착 예정";
 
-        // 각 단계 구성
         List<StepResponse> steps = new ArrayList<>();
         steps.add(StepResponse.builder()
                 .type("walk")
@@ -97,7 +96,6 @@ public class RoutingAlgorithm {
                 .to("목적지")
                 .build());
 
-        // Origin 마커
         RouteResponse.OriginMarkerResponse originMarker =
                 RouteResponse.OriginMarkerResponse.builder()
                         .lat(request.getOriginLat())

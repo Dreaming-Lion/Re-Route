@@ -5,10 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 프론트에서 보내주는 경로 탐색 요청 DTO
- * - 출발/도착 좌표
- */
+
+// 프론트에서 보내주는 경로 탐색 요청 DTO
+
 @Getter
 @Builder
 @NoArgsConstructor

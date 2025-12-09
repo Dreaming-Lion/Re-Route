@@ -1,4 +1,4 @@
-package run_lion.reroute.routing;
+package run_lion.reroute.routing.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
