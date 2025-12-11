@@ -1,29 +1,3 @@
-<<<<<<< HEAD
-package run_lion.reroute.routing.controller;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import run_lion.reroute.routing.dto.RouteResponse;
-import run_lion.reroute.routing.dto.RouteSearchRequest;
-import run_lion.reroute.routing.service.RoutingService;
-
-@RestController
-@RequestMapping("/api/routes")
-@RequiredArgsConstructor
-public class RoutingController {
-
-    private final RoutingService routingService;
-
-    @PostMapping("/search")
-    public ResponseEntity<RouteResponse> searchRoute(
-            @RequestBody RouteSearchRequest request
-    ){
-        RouteResponse bestRoute = routingService.searchBestRoute(request);
-        return ResponseEntity.ok(bestRoute);
-    }
-}
-=======
 package run_lion.reroute.routing.controller;
 
 import org.springframework.http.ResponseEntity;
@@ -50,6 +24,7 @@ public class RoutingController {
 
     private final RoutingService routingService;
 
+    // 생성자를 이용한 의존성 주입 (오른쪽 블록의 방식 채택)
     public RoutingController(RoutingService routingService) {
         this.routingService = routingService;
     }
@@ -63,6 +38,7 @@ public class RoutingController {
     @PostMapping("/route")
     public ResponseEntity<RoutingResponse> findRouteByCoordinates(
             @RequestBody RoutingRequest request) {
+        // 이 부분은 오른쪽 블록의 기능을 채택하여 로직을 유지했습니다.
         RoutingResponse response = routingService.findRoute(request);
         return ResponseEntity.ok(response);
     }
@@ -94,4 +70,3 @@ public class RoutingController {
         return ResponseEntity.ok(stations);
     }
 }
->>>>>>> origin/develop
