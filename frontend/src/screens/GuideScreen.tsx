@@ -31,7 +31,7 @@ export default function GuideScreen() {
           <Text style={s.heroTitle}>Re:Route <Text style={{ fontWeight: "900" }}>충주</Text></Text>
           <Text style={[s.heroSub, { color: "#3b556d" }]}>충주시 버스 알리미 · 간단 사용 가이드</Text>
 
-          <Pressable style={s.btnGrad} onPress={() => router.push("/search")}>
+          <Pressable style={s.btnGrad} onPress={() => router.push("/home")}>
             <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btnGradInner}>
               <Ionicons name="search" size={16} color="#0f172a" />
               <Text style={s.btnGradText}>바로 길찾기</Text>
@@ -47,7 +47,6 @@ export default function GuideScreen() {
             title="1) 출발/도착 입력"
             desc="검색 화면에서 출발지와 목적지를 모두 입력해 주세요."
             cta="검색 화면 열기"
-            onPress={() => router.push("/search")}
             colors={colors}
           />
           <StepCard
@@ -55,7 +54,6 @@ export default function GuideScreen() {
             title="2) 정류장/노선 확인"
             desc="가까운 정류장과 노선의 도착 정보를 확인하세요."
             cta="결과 보기"
-            onPress={() => router.push("/route-result")}
             colors={colors}
           />
           <StepCard
@@ -63,7 +61,6 @@ export default function GuideScreen() {
             title="3) 알림/즐겨찾기"
             desc="자주 쓰는 장소는 즐겨찾기, 특정 노선은 도착 알림을 설정하세요."
             cta="즐겨찾기 관리"
-            onPress={() => router.push("/(tabs)/favorites")}
             colors={colors}
           />
         </View>
@@ -137,14 +134,12 @@ function StepCard({
   title,
   desc,
   cta,
-  onPress,
   colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   desc: string;
   cta: string;
-  onPress: () => void;
   colors: any;
 }) {
   return (
@@ -156,7 +151,7 @@ function StepCard({
         <Text style={[s.cardTitle, { color: "#0f172a" }]}>{title}</Text>
       </View>
       <Text style={[s.cardDesc, { color: colors.mutedText }]}>{desc}</Text>
-      <Pressable onPress={onPress} style={s.btnBlue}>
+      <Pressable style={s.btnBlue}>
         <Ionicons name="arrow-forward" size={14} color="#0f172a" />
         <Text style={s.btnBlueText}>{cta}</Text>
       </Pressable>

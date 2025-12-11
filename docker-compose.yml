@@ -1,46 +1,43 @@
+version: "3.9"
+
 services:
   db:
-    image: postgres:16-alpine
+    image: mysql:8.0
     container_name: dev_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      MYSQL_DATABASE: reroutedb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+      MYSQL_ROOT_PASSWORD: root
+    command: --default-authentication-plugin=mysql_native_password
     ports:
-      - "5432:5432"
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD", "mysqladmin", "-u", "root", "-proot", "ping", "-h", "127.0.0.1"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   backend:
     build: ./backend
     container_name: dev_backend
-    command: ["/bin/sh", "/app/entrypoint.sh"]
     environment:
-      DJANGO_DEBUG: "1"
-      DJANGO_ALLOWED_HOSTS: "*"
-      DJANGO_SECRET_KEY: "dev-secret-key"
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
+      DB_URL: "jdbc:mysql://40.233.98.156:3306/reroute?sslMode=DISABLED&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=UTC"
+      DB_USER: "oh"
+      DB_PASS: "Zp6&dM71xF*9yLqs"
+      TAGO_SERVICE_KEY: "4aa7d56f"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
     ports:
-      - "8000:8000"
+      - "8000:8080"
 
   frontend:
     build: ./frontend
     container_name: dev_frontend
-    command: ["/bin/bash", "/workspace/entrypoint.sh"]   # bash로 실행 (pipefail 오류 방지)
+    command: ["/bin/bash", "/workspace/entrypoint.sh"]
     environment:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
       REACT_NATIVE_PACKAGER_HOSTNAME: 0.0.0.0
@@ -52,14 +49,14 @@ services:
       - ./frontend:/workspace
       - node_modules:/workspace/node_modules
     ports:
-      - "8081:8081"    # Metro
-      - "19000:19000"  # Expo (http)
-      - "19001:19001"  # Expo (ws)
-      - "19002:19002"  # Expo DevTools UI
+      - "8081:8081"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
       - "19006:19006"
     tty: true
     stdin_open: true
 
 volumes:
-  pgdata:
+  mysql_data:
   node_modules:

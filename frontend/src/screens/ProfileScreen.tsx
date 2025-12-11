@@ -146,7 +146,7 @@ export default function MyPageScreen() {
               { backgroundColor: colors.card, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
             ]}
           >
-            <Text style={{ color: colors.mutedText }}>저장된 즐겨찾기가 없습니다. “관리”에서 추가해 보세요.</Text>
+            <Text style={{ color: colors.mutedText }}>저장된 즐겨찾기가 없습니다. 관리에서 추가해 보세요.</Text>
           </View>
         ) : (
           <View style={{ gap: 10 }}>
