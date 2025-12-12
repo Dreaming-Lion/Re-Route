@@ -1,5 +1,8 @@
 package run_lion.reroute.routing.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 후보 경로 정보를 담는 DTO
  *
@@ -20,6 +23,8 @@ public class RouteCandidate {
     private int arrivalStationOrder;     // 하차 정류장 순서
 
     private int stationCount;            // 경유 정류장 수 (몇 정거장?)
+
+    private List<ArrivalInfo> arrivals = new ArrayList<>();  // 도착 예정 정보
 
     // 기본 생성자
     public RouteCandidate() {
@@ -96,5 +101,13 @@ public class RouteCandidate {
 
     public void setStationCount(int stationCount) {
         this.stationCount = stationCount;
+    }
+
+    public List<ArrivalInfo> getArrivals() {
+        return arrivals;
+    }
+
+    public void setArrivals(List<ArrivalInfo> arrivals) {
+        this.arrivals = arrivals;
     }
 }
