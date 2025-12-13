@@ -30,6 +30,7 @@ out/
 .springBeans
 .sts4-cache
 bin/
+backend/build/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
