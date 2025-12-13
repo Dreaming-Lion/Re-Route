@@ -37,8 +37,8 @@ public class ETARawDataProvider {
 
         return arrivals.stream()
                 .map(dto -> new ArrivalInfo(
-                        dto.getRouteId(),
-                        dto.getRouteNo(),
+                        dto.getBusId(),
+                        dto.getBusNo(),
                         dto.getArrTimeMin(),
                         dto.getPrevStationCount()
                 ))
