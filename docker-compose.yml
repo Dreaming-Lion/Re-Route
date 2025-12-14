@@ -1,21 +1,20 @@
-version: "3.9"
-
 services:
   db:
     image: mysql:8.0
     container_name: dev_db
     environment:
-      MYSQL_DATABASE: reroutedb
-      MYSQL_USER: appuser
-      MYSQL_PASSWORD: apppass
+      MYSQL_DATABASE: reroute
+      MYSQL_USER: oh
+      MYSQL_PASSWORD: "Zp6&dM71xF*9yLqs"
       MYSQL_ROOT_PASSWORD: root
     command: --default-authentication-plugin=mysql_native_password
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "-u", "root", "-proot", "ping", "-h", "127.0.0.1"]
+      test: ["CMD", "mysqladmin", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}", "ping", "-h", "127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -24,10 +23,10 @@ services:
     build: ./backend
     container_name: dev_backend
     environment:
-      DB_URL: "jdbc:mysql://40.233.98.156:3306/reroute?sslMode=DISABLED&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=UTC"
-      DB_USER: "oh"
-      DB_PASS: "Zp6&dM71xF*9yLqs"
-      TAGO_SERVICE_KEY: "4aa7d56f"
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      TAGO_SERVICE_KEY: ${TAGO_SERVICE_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -36,9 +35,12 @@ services:
 
   frontend:
     build: ./frontend
+    env_file:
+      - .env
     container_name: dev_frontend
     command: ["/bin/bash", "/workspace/entrypoint.sh"]
     environment:
+      EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL}
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
       REACT_NATIVE_PACKAGER_HOSTNAME: 0.0.0.0
       WATCHMAN_DISABLE: "true"

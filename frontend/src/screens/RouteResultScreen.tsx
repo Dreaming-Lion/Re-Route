@@ -1,110 +1,228 @@
-// src/screens/RouteResultScreen.tsx
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import Header from "../components/layout/Header";
 import { useTheme } from "../theme/ThemeProvider";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { fetchRouteCandidates, type RouteCandidate } from "../api/routing";
+import { fetchLocalArrivals, type LocalArrival } from "../api/localArrival";
 
 const GRAD = ["#cfefff", "#d7f7e9"];
 
-type Stop = {
-  id: string;
-  name: string;
-  walk: string;
-  lines: string[];
-  more?: string;   // "+3개 노선" 같은 표시용
+type RowVM = {
+  routeId: string;
+  routeNo: string;
+  isLive: boolean;
+  etaMinText: string;
+  prevStopsText: string; // LIVE일 때만
 };
 
-const STOPS: Stop[] = [
-  { id: "s1", name: "대학로",          walk: "도보 2분 (150m)",  lines: ["146", "472", "N16"], more: "+3개 노선" },
-  { id: "s2", name: "정문",            walk: "도보 5분 (380m)",  lines: ["360", "740", "N37"], more: "+7개 노선" },
-  { id: "s3", name: "서문",            walk: "도보 7분 (520m)",  lines: ["143", "401", "N15"], more: "+5개 노선" },
-  { id: "s4", name: "논현역 2번 출구", walk: "도보 8분 (650m)",  lines: ["421", "463"],        more: "+2개 노선" },
-  { id: "s5", name: "신논현역 1번 출구", walk: "도보 10분 (780m)", lines: ["333", "350", "542"], more: "+4개 노선" },
-];
-
 export default function RouteResultScreen() {
-  const { styles: themeStyles, colors, radii } = useTheme();
+  const { styles: themeStyles, colors } = useTheme();
   const router = useRouter();
-  const [liked, setLiked] = useState<Record<string, boolean>>({ s2: true });
+  const params = useLocalSearchParams<{
+    originId?: string;
+    originName?: string;
+    destinationId?: string;
+    destinationName?: string;
+  }>();
 
-  const toggleLike = (id: string) => setLiked(prev => ({ ...prev, [id]: !prev[id] }));
+  const originId = params.originId ?? "";
+  const destinationId = params.destinationId ?? "";
+  const originName = params.originName ?? "출발지";
+  const destinationName = params.destinationName ?? "도착지";
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [rows, setRows] = useState<RowVM[]>([]);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+
+  const empty = useMemo(() => !loading && rows.length === 0, [loading, rows.length]);
+
+  const localByRouteNo = (locals: LocalArrival[]) => {
+    // route_no별 가장 빠른 1개만 남김
+    const m = new Map<string, LocalArrival>();
+    for (const it of locals) {
+      const key = String(it.route_no ?? "").trim();
+      if (!key) continue;
+      const prev = m.get(key);
+      if (!prev || it.arr_time < prev.arr_time) m.set(key, it);
+    }
+    return m;
+  };
+
+  async function load() {
+    try {
+      setError(null);
+      if (!originId || !destinationId) {
+        setRows([]);
+        return;
+      }
+
+      const [candidates, locals] = await Promise.all([
+        fetchRouteCandidates(originId, destinationId),
+        fetchLocalArrivals(originId, 80),
+      ]);
+
+      const localMap = localByRouteNo(locals);
+
+      // ✅ 후보 노선 기반으로만 리스트 구성:
+      // - arrivals 있으면 LIVE
+      // - 없으면 시간표(local)로 fallback
+      const vms: RowVM[] = (candidates ?? [])
+        .map((c: RouteCandidate) => {
+          const routeNo = String(c.routeName ?? "").trim();
+          if (!routeNo) return null;
+
+          const live = c.arrivals?.[0]; // fastest 1개만 쓰는 정책
+          if (live) {
+            return {
+              routeId: c.routeId,
+              routeNo,
+              isLive: true,
+              etaMinText: live.arrivalMinutes <= 0 ? "곧 도착" : `${live.arrivalMinutes}분`,
+              prevStopsText: `${live.remainingStops}정류장 전`,
+            };
+          }
+
+          const schedule = localMap.get(routeNo);
+          if (schedule) {
+            const min = Math.max(0, Math.ceil(schedule.arr_time / 60));
+            return {
+              routeId: c.routeId,
+              routeNo,
+              isLive: false,
+              etaMinText: min <= 0 ? "곧 도착(시간표)" : `${min}분(시간표)`,
+              prevStopsText: "",
+            };
+          }
+
+          return {
+            routeId: c.routeId,
+            routeNo,
+            isLive: false,
+            etaMinText: "정보 없음",
+            prevStopsText: "",
+          };
+
+        })
+        .filter(Boolean) as RowVM[];
+
+      // ✅ 정렬: LIVE 우선, 그 다음 ETA 빠른 순
+      vms.sort((a, b) => {
+        if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
+        const an = parseInt(a.etaMinText, 10);
+        const bn = parseInt(b.etaMinText, 10);
+        if (Number.isNaN(an) && Number.isNaN(bn)) return 0;
+        if (Number.isNaN(an)) return 1;
+        if (Number.isNaN(bn)) return -1;
+        return an - bn;
+      });
+
+      setRows(vms);
+      setLastUpdatedAt(new Date());
+    } catch (e: any) {
+      setError(e?.message ?? "경로를 불러오지 못했어요.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    load();
+    const t = setInterval(load, 10000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originId, destinationId]);
 
   return (
     <View style={themeStyles.screen}>
-      <Header title="정류장 결과" onBack={() => router.back()} />
+      <Header title="경로 결과" onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
-        {/* 현재 위치 / 검색 카드 */}
         <LinearGradient colors={GRAD} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.gradWrap}>
-          <Pressable
-            onPress={() => router.push("/search")}
-            style={[s.searchCard, { backgroundColor: "white" }]}
-          >
-            <View style={s.leftPin}>
-              <Ionicons name="location-sharp" size={16} color="white" />
-            </View>
+          <View style={[s.summaryCard, { backgroundColor: "white" }]}>
             <View style={{ flex: 1 }}>
-              <Text style={s.searchLabel}>현재 위치</Text>
-              <Text style={s.searchValue}>한국교통대학교</Text>
+              <Text style={s.summaryLabel}>출발</Text>
+              <Text style={s.summaryValue}>{originName}</Text>
+              <Text style={s.summaryId}>{originId}</Text>
             </View>
-            <Ionicons name="search" size={18} color="#0f172a" />
-          </Pressable>
+
+            <Ionicons name="arrow-forward" size={18} color="#0f172a" />
+
+            <View style={{ flex: 1, alignItems: "flex-end" }}>
+              <Text style={s.summaryLabel}>도착</Text>
+              <Text style={s.summaryValue}>{destinationName}</Text>
+              <Text style={s.summaryId}>{destinationId}</Text>
+            </View>
+          </View>
         </LinearGradient>
 
-        {/* 섹션 타이틀 */}
-        <Text style={[s.sectionTitle, { color: colors.text }]}>가까운 정류장</Text>
-        <Text style={[s.sectionSub, { color: colors.mutedText }]}>
-          현재 위치에서 가까운 순으로 정렬
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>추천 노선</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {loading ? <ActivityIndicator /> : null}
+            <Text style={{ color: colors.mutedText, fontWeight: "700", fontSize: 12 }}>
+              {lastUpdatedAt ? `업데이트: ${lastUpdatedAt.toLocaleTimeString()}` : ""}
+            </Text>
+            <Pressable onPress={load} hitSlop={10}>
+              <Ionicons name="refresh" size={16} color={colors.mutedText} />
+            </Pressable>
+          </View>
+        </View>
 
-        {/* 정류장 카드 리스트 */}
-        <View style={{ gap: 10, marginTop: 10 }}>
-          {STOPS.map((stop, i) => (
+        {!!error && <Text style={{ color: "#DC2626", fontWeight: "800", marginTop: 10 }}>{error}</Text>}
+
+        {empty ? (
+          <Text style={{ color: colors.mutedText, fontWeight: "700", marginTop: 12, textAlign: "center" }}>
+            이용 가능한 노선이 없어요.
+          </Text>
+        ) : null}
+
+        <View style={{ gap: 10, marginTop: 12 }}>
+          {rows.map((it, idx) => (
             <Pressable
-              key={stop.id}
-              onPress={() => router.push("/route-detail")}
-              style={[
-                s.stopCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                i === 1 && { borderColor: "#cfefff" }, // 살짝 강조
-              ]}
+              key={`${it.routeId}-${idx}`}
+              onPress={() =>
+                router.push({
+                  pathname: "/route-detail",
+                  params: {
+                    stationId: originId,
+                    stationName: originName,
+                    routeId: it.routeId, // ✅ /api/realtime/gps?routeId=&stationId= 유지 OK
+                    routeNo: it.routeNo,
+                  },
+                })
+              }
+              style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              {/* 왼쪽 아이콘 */}
-              <View style={s.leading}>
+              <View style={s.left}>
                 <View style={s.busIconBg}>
                   <Ionicons name="bus" size={16} color="#3B82F6" />
                 </View>
-              </View>
+                <View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={[s.busNo, { color: colors.text }]}>{it.routeNo}번</Text>
 
-              {/* 본문 */}
-              <View style={{ flex: 1 }}>
-                <Text style={[s.stopName, { color: colors.text }]}>{stop.name}</Text>
-                <Text style={[s.stopWalk, { color: colors.mutedText }]}>{stop.walk}</Text>
+                    {it.isLive ? (
+                      <View style={s.livePill}><Text style={s.livePillText}>LIVE</Text></View>
+                    ) : (
+                      <View style={s.schedulePill}><Text style={s.schedulePillText}>시간표</Text></View>
+                    )}
+                  </View>
 
-                {/* 노선 배지 */}
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                  {stop.lines.map((ln) => (
-                    <View key={ln} style={s.badge}>
-                      <Text style={s.badgeText}>{ln}</Text>
-                    </View>
-                  ))}
-                  {!!stop.more && (
-                    <Text style={s.moreText}>{stop.more}</Text>
+                  {!!it.prevStopsText && (
+                    <Text style={[s.sub, { color: colors.mutedText }]}>{it.prevStopsText}</Text>
                   )}
                 </View>
               </View>
 
-              {/* 우측 하트 */}
-              <Pressable onPress={() => toggleLike(stop.id)} hitSlop={10} style={s.heartBtn}>
-                <Ionicons
-                  name={liked[stop.id] ? "heart" : "heart-outline"}
-                  size={18}
-                  color={liked[stop.id] ? "#EF4444" : colors.mutedText}
-                />
-              </Pressable>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={s.eta}>{it.etaMinText}</Text>
+                <Text style={[s.sub, { color: colors.mutedText }]}>탭하면 GPS 보기</Text>
+              </View>
             </Pressable>
           ))}
         </View>
@@ -114,13 +232,8 @@ export default function RouteResultScreen() {
 }
 
 const s = StyleSheet.create({
-  // 상단 검색 카드(그라데이션 테두리 느낌)
-  gradWrap: {
-    borderRadius: 14,
-    padding: 2,
-    marginBottom: 12,
-  },
-  searchCard: {
+  gradWrap: { borderRadius: 14, padding: 2, marginBottom: 12 },
+  summaryCard: {
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -133,56 +246,22 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  leftPin: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#3B82F6",
-  },
-  searchLabel: { fontSize: 11, fontWeight: "700", color: "#64748B" },
-  searchValue: { fontSize: 14, fontWeight: "800", color: "#0f172a" },
+  summaryLabel: { fontSize: 11, fontWeight: "800", color: "#64748B" },
+  summaryValue: { fontSize: 14, fontWeight: "900", color: "#0f172a", marginTop: 2 },
+  summaryId: { fontSize: 10, fontWeight: "700", color: "#94a3b8", marginTop: 2 },
 
-  sectionTitle: { fontSize: 16, fontWeight: "800", marginTop: 6 },
-  sectionSub: { fontSize: 12, fontWeight: "600", marginTop: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: "900" },
 
-  // 정류장 카드
-  stopCard: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  leading: { width: 40, alignItems: "center" },
-  busIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E0F2FE",
-  },
-  stopName: { fontSize: 14, fontWeight: "800" },
-  stopWalk: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+  card: { borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  left: { flexDirection: "row", alignItems: "center", gap: 10 },
+  busIconBg: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#E0F2FE" },
+  busNo: { fontSize: 14, fontWeight: "900" },
+  eta: { fontSize: 18, fontWeight: "900", color: "#2563EB" },
+  sub: { fontSize: 11, fontWeight: "700" },
 
-  badge: {
-    height: 22,
-    paddingHorizontal: 10,
-    borderRadius: 11,
-    backgroundColor: "#3B82F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { color: "white", fontSize: 12, fontWeight: "800" },
-  moreText: { fontSize: 11, fontWeight: "700", color: "#64748B", alignSelf: "center" },
+  livePill: { height: 18, paddingHorizontal: 8, borderRadius: 999, backgroundColor: "rgba(37,99,235,0.12)", alignItems: "center", justifyContent: "center" },
+  livePillText: { fontSize: 11, fontWeight: "900", color: "#2563EB" },
 
-  heartBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  schedulePill: { height: 18, paddingHorizontal: 8, borderRadius: 999, backgroundColor: "rgba(100,116,139,0.12)", alignItems: "center", justifyContent: "center" },
+  schedulePillText: { fontSize: 11, fontWeight: "900", color: "#64748B" },
 });

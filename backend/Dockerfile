@@ -1,7 +1,11 @@
 FROM gradle:8.5-jdk17 AS builder
 WORKDIR /app
+
 COPY . .
-RUN gradle bootJar --no-daemon
+RUN sed -i 's/\r$//' gradlew || true
+RUN chmod +x gradlew
+
+RUN ./gradlew clean bootJar --no-daemon
 
 FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app

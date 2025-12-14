@@ -49,6 +49,7 @@ ensure "@react-native-async-storage/async-storage"
 ensure "@react-native-async-storage/async-storage react-native-webview"
 ensure "react-native-webview"
 ensure "expo-constants"
+ensure "axios"
 
 
 if [ -n "$NEED" ]; then

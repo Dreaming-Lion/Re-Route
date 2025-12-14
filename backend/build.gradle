@@ -30,9 +30,15 @@ dependencies {
     // Swagger(OpenAPI)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3'
 
-    // Lombok
+    // Lombok (Docker/Gradle 컴파일용)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // Excel
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
