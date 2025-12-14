@@ -125,10 +125,7 @@ public class RoutingAlgorithm {
     }
 
     private int resolveWaitTime(RouteCandidate rc, String departureStationId) {
-        // 1) RouteCandidate에 arrivals가 포함되어 있으면 그걸 우선 사용
         try {
-            // arrivals 필드가 실제로 A에서 포함되어 있다고 문서에 있으므로 반영
-            // (만약 현재 코드에 arrivals가 아직 없으면, 아래 try-catch를 제거하고 provider만 쓰면 됨)
             var arrivals = (List<ArrivalInfo>) rc.getClass()
                     .getMethod("getArrivals")
                     .invoke(rc);
@@ -141,7 +138,6 @@ public class RoutingAlgorithm {
                         .orElse(NO_ETA_PENALTY_MIN);
             }
         } catch (Exception ignore) {
-            // arrivals 필드/게터가 아직 없을 수도 있으니 provider로 fallback
         }
 
         // 2) provider로 보완 (실시간 연동)
@@ -197,7 +193,7 @@ public class RoutingAlgorithm {
     }
 
     private RouteResponse buildWalkOnlyResponse(RouteSearchRequest request, StopCandidate departureStop, StopCandidate arrivalStop) {
-        // 정책: 후보 노선이 없으면 도보만 보여주는 응답(최소한 프론트가 깨지지 않게)
+        // 정책: 후보 노선이 없으면 도보만 보여주는 응답
         int walk1 = departureStop != null ? safeNonNegative(departureStop.getWalkTimeFromOrigin()) : 0;
         int walk2 = arrivalStop != null ? safeNonNegative(arrivalStop.getWalkTimeFromOrigin()) : 0;
         int total = walk1 + walk2;

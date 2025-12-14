@@ -3,8 +3,8 @@
 ## 개요
 - **담당**: A 파트 (데이터 처리 & 매핑)
 - **목표**: B 파트(알고리즘)에 경로 탐색용 데이터 제공
-- **최종 수정일**: 2025-12-12
-- **상태**: ✅ **A 파트 구현 완료**
+- **최종 수정일**: 2025-12-15
+- **상태**: ✅ **Routing 전체 모듈 구현 완료**
 
 ---
 
@@ -13,29 +13,34 @@
 ```
 routing/
 ├── controller/
-│   └── RoutingController.java       # REST API 엔드포인트
+│   └── RoutingController.java          # 경로 탐색 REST API (A/B 통합)
 ├── dto/
-│   ├── StopCandidate.java           # 후보 정류장 DTO
-│   ├── RouteCandidate.java          # 후보 노선 DTO
-│   ├── ArrivalInfo.java             # 도착 예정 정보 DTO
-│   ├── RoutingRequest.java          # 경로 탐색 요청 DTO
-│   └── RoutingResponse.java         # 경로 탐색 응답 DTO
+│   ├── StopCandidate.java              # 후보 정류장 DTO (A)
+│   ├── RouteCandidate.java             # 후보 노선 DTO (A)
+│   ├── ArrivalInfo.java                # 도착 예정 정보 DTO (A)
+│   ├── RoutingRequest.java             # A 파트 경로 요청 DTO
+│   ├── RoutingResponse.java            # A 파트 응답 DTO
+│   ├── RouteSearchRequest.java         # B 파트 최종 경로 요청 DTO
+│   ├── RouteResponse.java              # B 파트 최종 응답 DTO
+│   └── StepResponse.java               # 경로 단계(step) DTO (B)
 ├── entity/
-│   ├── Station.java                 # 정류장 엔티티
-│   ├── Route.java                   # 노선 엔티티
-│   ├── RouteStation.java            # 노선-정류장 관계 엔티티
-│   └── RouteStationId.java          # 복합키 클래스
+│   ├── Station.java                    # 정류장 엔티티
+│   ├── Route.java                      # 노선 엔티티
+│   ├── RouteStation.java               # 노선-정류장 관계 엔티티
+│   └── RouteStationId.java             # 복합키 클래스
 ├── repository/
-│   ├── StationRepository.java       # 정류장 Repository
-│   ├── RouteRepository.java         # 노선 Repository
-│   └── RouteStationRepository.java  # 노선-정류장 Repository
+│   ├── StationRepository.java
+│   ├── RouteRepository.java
+│   └── RouteStationRepository.java
 ├── service/
-│   ├── RoutingStationResolver.java  # 정류장 검색/매핑 서비스
-│   ├── RouteFilter.java             # 노선 필터링 서비스
-│   ├── ETARawDataProvider.java      # ETA 데이터 제공 서비스
-│   └── RoutingService.java          # 경로 탐색 통합 서비스
+│   ├── RoutingStationResolver.java     # 정류장 검색/매핑 (A)
+│   ├── RouteFilter.java                # 노선 필터링 (A)
+│   ├── ETARawDataProvider.java         # ETA 데이터 제공 (A/B 공통)
+│   ├── RoutingService.java             # A 파트 통합 서비스
+│   └── RoutingAlgorithm.java           # B 파트 최적 경로 알고리즘
 └── util/
-    └── DistanceCalculator.java      # 거리/도보시간 계산 유틸
+    └── DistanceCalculator.java          # 거리/도보 시간 계산 유틸
+
 ```
 
 ---
@@ -84,15 +89,45 @@ routing/
 ---
 
 ## API 엔드포인트
-
-| Method | URL | 설명 |
-|--------|-----|------|
-| POST | `/api/routing/route` | 좌표 기반 경로 탐색 |
-| GET | `/api/routing/route?from=&to=` | 정류장 ID 기반 경로 탐색 |
-| GET | `/api/routing/stations/nearby?lat=&lon=&radius=` | 근처 정류장 조회 |
+| Method | URL                            | 설명                   |
+| ------ | ------------------------------ | -------------------- |
+| POST   | `/api/routing/route`           | 좌표 기반 경로 후보 탐색    |
+| GET    | `/api/routing/route?from=&to=` | 정류장 ID 기반 후보 탐색   |
+| GET    | `/api/routing/stations/nearby` | 근처 정류장 조회            |
+| POST   | `/api/routing/search`          | **최적 경로 계산 ** |
 
 ### 요청/응답 예시
+**POST /api/routing/search**
+```json
+// Request
+{
+  "originLat": 36.969006,
+  "originLng": 127.870014,
+  "destLat": 36.9912,
+  "destLng": 127.9265
+}
 
+// Response (버스 포함)
+{
+  "totalTime": 75,
+  "steps": [
+    { "type": "walk", "duration": 2, "from": "출발지", "to": "한국교통대(대학본부건너편)" },
+    { "type": "bus", "duration": 34, "from": "한국교통대(대학본부건너편)", "to": "세원아파트(맞은편)", "line": "999", "waitTime": 30 },
+    { "type": "walk", "duration": 9, "from": "세원아파트(맞은편)", "to": "목적지" }
+  ],
+  "eta": "01:19 도착 예정"
+}
+
+// Response (후보 없음 -> 도보만)
+{
+  "totalTime": 20,
+  "steps": [
+    { "type": "walk", "duration": 20, "from": "출발지", "to": "목적지" }
+  ],
+  "eta": "00:33 도착 예정"
+}
+
+```
 **POST /api/routing/route**
 ```json
 // Request
@@ -269,15 +304,23 @@ public class ArrivalInfo {
 | ETA 데이터 | ✅ 완료 |
 | REST API | ✅ 완료 |
 
+
 ---
 
-## 다음 단계 (B 파트)
+[//]: # (## 다음 단계 &#40;B 파트&#41;)
 
-1. **B 파트 통합**
-   - A 파트에서 제공하는 데이터를 활용한 최적 경로 계산
-   - 총 소요 시간 기준 경로 정렬
-   - 최종 응답 조립
+[//]: # ()
+[//]: # (1. **B 파트 통합**)
 
-2. **추가 고려 사항**
-   - 환승 경로 지원 (버스 2대 이상 이용)
-   - 실시간 ETA 반영한 동적 경로 추천
+[//]: # (   - A 파트에서 제공하는 데이터를 활용한 최적 경로 계산)
+
+[//]: # (   - 총 소요 시간 기준 경로 정렬)
+
+[//]: # (   - 최종 응답 조립)
+
+[//]: # ()
+[//]: # (2. **추가 고려 사항**)
+
+[//]: # (   - 환승 경로 지원 &#40;버스 2대 이상 이용&#41;)
+
+[//]: # (   - 실시간 ETA 반영한 동적 경로 추천)
