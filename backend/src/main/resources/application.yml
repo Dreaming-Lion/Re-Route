@@ -19,7 +19,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
   jackson:
-    property-naming-strategy: SNAKE_CASE
+    property-naming-strategy: LOWER_CAMEL_CASE
     default-property-inclusion: non_null
     time-zone: UTC
 
