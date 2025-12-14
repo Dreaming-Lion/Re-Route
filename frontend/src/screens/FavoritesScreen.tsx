@@ -110,7 +110,7 @@ export default function FavoritesScreen() {
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="장소명 (예: 집, 회사 등)"
+              placeholder="장소명"
               placeholderTextColor={colors.mutedForeground}
               style={s.input}
               returnKeyType="next"
